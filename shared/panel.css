@@ -95,3 +95,5 @@ td .acts{display:flex;gap:.3rem;flex-wrap:wrap}
 .busy{position:fixed;inset:0;background:rgba(255,249,244,.7);z-index:300;display:grid;place-items:center;font-size:.9rem;color:var(--rose-d)}
 .help{background:var(--peach);border-radius:12px;padding:.7rem .9rem;font-size:.78rem;color:var(--ink);margin-bottom:.8rem}
 .ok-box{background:#eef6ec;border:1.5px solid #cfe3cb;border-radius:12px;padding:.8rem;font-size:.82rem;margin-top:.8rem}
+@media(max-width:560px){.who{display:none}.brand{font-size:1.5rem}.top-in{gap:.35rem;padding:.6rem .8rem}.top-in .btn-sm{padding:.4em .7em;font-size:.72rem}}
+html,body{overflow-x:hidden}
