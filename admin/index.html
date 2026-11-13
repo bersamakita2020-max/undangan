@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Undangan Digital</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/panel.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../shared/default-data.js"></script>
+<script src="../shared/common.js"></script>
+</head>
+<body>
+<div id="loginView" class="login-wrap">
+  <div class="card login">
+    <div class="script">Admin Undangan</div>
+    <p class="muted small">Khusus pemilik platform</p>
+    <form id="loginForm">
+      <label class="f">Email<input name="email" type="email" required autocomplete="username"></label>
+      <label class="f">Password<input name="password" type="password" required autocomplete="current-password"></label>
+      <button class="btn btn-primary" type="submit">Masuk</button>
+      <p id="loginMsg"></p>
+    </form>
+  </div>
+</div>
+<div id="appView" hidden>
+  <header class="top"><div class="top-in"><div class="brand">Admin</div><div class="sp"></div><div class="who" id="who"></div>
+    <button class="btn btn-ghost btn-sm" data-logout>Keluar</button></div></header>
+  <main class="wrap">
+    <div id="notAdmin" class="card" hidden><h3>Bukan akun admin</h3><p class="muted">Halaman ini khusus admin. <a href="../dashboard/">Buka dashboard klien</a>.</p></div>
+    <div id="adminArea" hidden>
+      <div class="card"><h3>Buat Akun Klien Baru</h3>
+        <form id="createForm"><div class="grid2">
+          <label class="f">Nama klien / pasangan<input name="full_name" required placeholder="Budi & Ani"></label>
+          <label class="f">Email login klien<input name="email" type="email" required placeholder="klien@email.com"></label>
+          <label class="f">Slug link undangan<input name="slug" required pattern="[a-z0-9][a-z0-9-]{1,40}" placeholder="budi-ani"><span class="tiny muted" id="slugHint"></span></label>
+          <label class="f">Password awal<div class="row" style="flex-wrap:nowrap"><input name="password" required minlength="8"><button type="button" class="btn btn-outline btn-sm" id="genPw">Acak</button></div></label>
+        </div><button class="btn btn-primary" type="submit">＋ Buat Akun &amp; Undangan</button></form>
+        <div id="createResult"></div></div>
+      <div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Daftar Akun</h3><button class="btn btn-ghost btn-sm" id="reload">🔄 Muat ulang</button></div>
+        <div class="tbl-wrap" style="margin-top:.7rem"><table><thead><tr><th>Nama / Email</th><th>Peran</th><th>Undangan</th><th>Tamu</th><th>RSVP</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="users"></tbody></table></div></div>
+    </div>
+  </main>
+</div>
+<div class="busy" id="busy" hidden><div id="busyMsg">Memproses…</div></div>
+<div id="toast" class="toast"></div>
+<script src="admin.js"></script>
+</body>
+</html>

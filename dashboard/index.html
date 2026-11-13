@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Undangan Digital</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/panel.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="../config.js"></script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/default-data.js"></script>
+<script src="../shared/common.js"></script>
+</head>
+<body>
+<div id="loginView" class="login-wrap">
+  <div class="card login">
+    <div class="script">Undangan Digital</div>
+    <p class="muted small">Masuk untuk mengelola undangan Anda</p>
+    <form id="loginForm">
+      <label class="f">Email<input name="email" type="email" required autocomplete="username"></label>
+      <label class="f">Password<input name="password" type="password" required autocomplete="current-password"></label>
+      <button class="btn btn-primary" type="submit">Masuk</button>
+      <p id="loginMsg"></p>
+    </form>
+    <p class="tiny muted">Belum punya akun? Hubungi admin untuk dibuatkan.</p>
+  </div>
+</div>
+
+<div id="appView" hidden>
+  <header class="top">
+    <div class="top-in">
+      <div class="brand">Undangan</div>
+      <div class="sp"></div>
+      <div class="who" id="who"></div>
+      <a class="btn btn-outline btn-sm" id="adminLink" href="../admin/" hidden>⚙️ Admin</a>
+      <a class="btn btn-outline btn-sm" id="viewLink" target="_blank" rel="noopener">👁️ Lihat</a>
+      <button class="btn btn-ghost btn-sm" data-logout>Keluar</button>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="ringkasan" class="active">🏠 Ringkasan</button>
+      <button data-tab="mempelai">💑 Mempelai</button>
+      <button data-tab="acara">📅 Acara</button>
+      <button data-tab="cerita">💞 Love Story</button>
+      <button data-tab="media">📷 Foto, Video &amp; Musik</button>
+      <button data-tab="amplop">🎁 Amplop</button>
+      <button data-tab="tema">🎨 Tema</button>
+      <button data-tab="tamu">👥 Tamu</button>
+      <button data-tab="rsvp">💬 RSVP &amp; Ucapan</button>
+    </nav>
+  </header>
+  <main class="wrap">
+    <section class="panel active" id="p-ringkasan"></section>
+    <section class="panel" id="p-mempelai"></section>
+    <section class="panel" id="p-acara"></section>
+    <section class="panel" id="p-cerita"></section>
+    <section class="panel" id="p-media"></section>
+    <section class="panel" id="p-amplop"></section>
+    <section class="panel" id="p-tema"></section>
+    <section class="panel" id="p-tamu"></section>
+    <section class="panel" id="p-rsvp"></section>
+  </main>
+  <div class="savebar" id="savebar">
+    <span class="dirty" id="dirty"></span>
+    <button class="btn btn-primary" id="saveBtn">💾 Simpan Perubahan</button>
+  </div>
+</div>
+<div class="busy" id="busy" hidden><div id="busyMsg">Memproses…</div></div>
+<div id="toast" class="toast"></div>
+<script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,11 +1,41 @@
-(function(){
-  const C = window.UNDANGAN;
+(async function(){
+  const PF = window.PLATFORM || {};
   const $ = s => document.querySelector(s);
+  const params = new URLSearchParams(location.search);
+  const slug = (params.get("u") || params.get("undangan") || PF.defaultSlug || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+  const api = (path, opt = {}) => fetch(PF.supabaseUrl + "/rest/v1/" + path, { ...opt,
+    headers: { apikey: PF.supabaseKey, "Content-Type": "application/json", ...(opt.headers || {}) } });
+  let inv = null, media = [], online = false;
+  try {
+    const r = await api(`invitations?slug=eq.${encodeURIComponent(slug)}&select=id,slug,data,theme`);
+    if (r.ok) { online = true; inv = (await r.json())[0] || null; }
+    if (inv) { const m = await api(`media?invitation_id=eq.${inv.id}&select=kind,url,title,sort&order=sort.asc,created_at.asc`); media = m.ok ? await m.json() : []; }
+  } catch (e) { console.warn("Gagal memuat data undangan", e); }
+  if (!inv && online && params.get("u")) {
+    $("#loading").innerHTML = '<div class="notfound"><p class="script" style="font-size:2.4rem">Undangan tidak ditemukan</p><p>Periksa kembali link undangan Anda.</p></div>';
+    return;
+  }
+  const BASE = { pria:{}, wanita:{}, ayat:{}, acara:[], loveStory:[], galeri:[], video:[], rekening:[], alamatKado:{} };
+  const C = Object.assign({}, BASE, inv ? inv.data : window.UNDANGAN_DEFAULT);
+  ["pria","wanita","ayat","alamatKado"].forEach(k => C[k] = C[k] || {});
+  ["acara","loveStory","galeri","video","rekening"].forEach(k => C[k] = Array.isArray(C[k]) ? C[k] : []);
+  if (inv && media.length) {
+    const ph = media.filter(m => m.kind === "photo").map(m => m.url);
+    const vd = media.filter(m => m.kind !== "photo").map(m => ({ tipe: m.kind === "youtube" ? "youtube" : "mp4", src: m.url, judul: m.title || "" }));
+    if (ph.length) C.galeri = ph;
+    if (vd.length) C.video = vd;
+  }
+  if (window.TEMA) TEMA.apply(inv ? inv.theme : null);
+  window.addEventListener("message", e => { if (e.data && e.data.type === "tema" && window.TEMA) TEMA.apply(e.data.theme); });
+  setTimeout(() => $("#loading").classList.add("hide"), 150);
+  const firstAcara = C.acara[0] || {};
+  C.tanggalUtama = C.tanggalUtama || firstAcara.mulai || new Date().toISOString();
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const HARI = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
   const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
   // Tampilkan jam/tanggal sesuai zona acara (ambil dari offset di string tanggal)
   function parts(iso){
+    iso = iso || C.tanggalUtama;
     const d = new Date(iso);
     const m = /([+-])(\d\d):(\d\d)$/.exec(iso);
     const off = m ? (m[1]==="-"?-1:1)*(+m[2]*60 + +m[3]) : 420;
@@ -21,25 +51,23 @@
     pasangan: `${C.pria.panggilan} &amp; ${C.wanita.panggilan}`,
     tanggalPendek: `${String(P.tgl).padStart(2,"0")} . ${String(P.bnum).padStart(2,"0")} . ${P.thn}`,
     tanggalPanjang: `${P.hari}, ${P.tgl} ${P.bln} ${P.thn}`,
-    hashtag: esc(C.hashtag), ayatTeks: `“${esc(C.ayat.teks)}”`, ayatSumber: esc(C.ayat.sumber),
+    hashtag: esc(C.hashtag), ayatTeks: C.ayat.teks ? `“${esc(C.ayat.teks)}”` : "", ayatSumber: esc(C.ayat.sumber),
     penutup: esc(C.penutup), kreditMusik: esc(C.kreditMusik ? "Musik: " + C.kreditMusik : "")
   };
   document.querySelectorAll("[data-bind]").forEach(el => el.innerHTML = binds[el.dataset.bind] ?? "");
-  document.title = C.judul;
-  $("#coverBg").style.backgroundImage = `url('${C.fotoCover}')`;
-  $("#heroBg").style.backgroundImage = `url('${C.fotoHero}')`;
-  $("#closingBg").style.backgroundImage = `url('${C.fotoPenutup}')`;
+  document.title = C.judul || `The Wedding of ${C.pria.panggilan||""} & ${C.wanita.panggilan||""}`;
+  const bg = (el, u) => { if (u) $(el).style.backgroundImage = `url("${String(u).replace(/"/g,"%22")}")`; };
+  bg("#coverBg", C.fotoCover || C.fotoHero); bg("#heroBg", C.fotoHero || C.fotoCover); bg("#closingBg", C.fotoPenutup || C.fotoHero);
 
   // ---------- Nama tamu dari URL ?to= ----------
-  const params = new URLSearchParams(location.search);
   const tamu = (params.get("to") || params.get("kepada") || "").trim();
   if (tamu) { $("#guestName").textContent = tamu; $("#fNama").value = tamu; }
 
   // ---------- Mempelai ----------
   function person(p){
-    return `<div class="photo-frame"><img src="${esc(p.foto)}" alt="${esc(p.namaLengkap)}" loading="lazy"></div>
+    return `${p.foto ? `<div class="photo-frame"><img src="${esc(p.foto)}"` : `<div class="photo-frame" style="display:none"><img`} alt="${esc(p.namaLengkap)}" loading="lazy"></div>
       <h4>${esc(p.panggilan)}</h4><div class="fullname">${esc(p.namaLengkap)}</div>
-      <div class="parents">${esc(p.anakKe)}<br>${esc(p.ayah)} &amp; ${esc(p.ibu)}</div>
+      <div class="parents">${esc(p.anakKe||"")}<br>${esc(p.ayah||"")}${p.ayah&&p.ibu?" &amp; ":""}${esc(p.ibu||"")}</div>
       ${p.instagram ? `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="https://instagram.com/${esc(p.instagram)}">📷 @${esc(p.instagram)}</a>` : ""}`;
   }
   $("#pria").innerHTML = person(C.pria);
@@ -56,7 +84,7 @@
 
   // ---------- Acara ----------
   const gcal = e => {
-    const f = s => new Date(s).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+    const f = s => new Date(s || e.mulai).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
     const q = new URLSearchParams({action:"TEMPLATE", text:`${e.nama} ${C.pria.panggilan} & ${C.wanita.panggilan}`,
       dates:`${f(e.mulai)}/${f(e.selesai)}`, details:`Undangan pernikahan ${C.pria.panggilan} & ${C.wanita.panggilan}\n${location.href.split("?")[0]}`, location:`${e.tempat}, ${e.alamat}`});
     return "https://calendar.google.com/calendar/render?" + q.toString();
@@ -74,7 +102,9 @@
         <a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="${gcal(e)}">📅 Simpan ke Kalender</a>
       </div></div>`;
   }).join("");
-  $("#mapFrame").src = "https://maps.google.com/maps?q=" + encodeURIComponent(C.petaQuery) + "&z=15&output=embed";
+  if (C.petaQuery) $("#mapFrame").src = "https://maps.google.com/maps?q=" + encodeURIComponent(C.petaQuery) + "&z=15&output=embed";
+  else $(".map-wrap").remove();
+  if (!C.acara.length) $("#acara").remove();
 
   // ---------- Love story ----------
   $("#timeline").innerHTML = (C.loveStory||[]).map(s => `<div class="tl-item reveal"><div class="card">
@@ -98,6 +128,10 @@
   lb.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-sx; if(Math.abs(dx)>50) show(cur+(dx<0?1:-1));});
 
   // ---------- Video ----------
+  const ytId = s => { const m = String(s).match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/); return m ? m[1] : String(s); };
+  C.video.forEach(v => { if (v.tipe === "youtube") v.src = ytId(v.src); });
+  if (!G.length) $("#gallery").remove();
+  if (!G.length && !C.video.length) $("#galeri").remove();
   $("#videos").innerHTML = (C.video||[]).map(v => v.tipe==="youtube"
     ? `<div class="video-card reveal"><iframe src="https://www.youtube-nocookie.com/embed/${esc(v.src)}" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy" title="${esc(v.judul)}"></iframe>${v.judul?`<p>🎬 ${esc(v.judul)}</p>`:""}</div>`
     : `<div class="video-card reveal"><video controls playsinline preload="none" poster="${esc(v.poster||"")}" src="${esc(v.src)}"></video>${v.judul?`<p>🎬 ${esc(v.judul)}</p>`:""}</div>`).join("");
@@ -111,11 +145,15 @@
       <div><div class="num">${esc(r.nomor)}</div><div class="holder">a.n. ${esc(r.atasNama)}</div></div>
       <button class="btn btn-sm copy" data-copy="${esc(String(r.nomor).replace(/\s/g,""))}">📋 Salin</button></div>`).join("");
   if (C.qris) $("#qrisImg").src = C.qris; else document.querySelector('[data-tab="qr"]').remove();
+  if (!C.rekening.length) { document.querySelector('[data-tab="tf"]').remove(); $("#tab-tf").remove(); }
   const k = C.alamatKado;
   if (k && k.alamat) {
     const full = `${k.penerima}\n${k.alamat}\n${k.hp||""}`;
     $("#kadoBox").innerHTML = `<div style="font-size:2rem">🎁</div><b>${esc(k.penerima)}</b><p class="small" style="margin:.4rem 0">${esc(k.alamat)}</p><p class="small">📞 ${esc(k.hp||"")}</p><br><button class="btn btn-outline btn-sm" data-copy="${esc(full)}">📋 Salin Alamat</button>`;
   } else document.querySelector('[data-tab="kado"]').remove();
+  { const t = document.querySelector(".gift-tabs .tab");
+    if (!t) $("#hadiah").remove();
+    else if (!document.querySelector(".tab.active")) { t.classList.add("active"); $("#tab-" + t.dataset.tab).classList.add("active"); } }
   async function copyText(t){
     try { await navigator.clipboard.writeText(t); }
     catch { const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
@@ -127,54 +165,55 @@
     t.classList.add("active"); $("#tab-"+t.dataset.tab).classList.add("active");
   });
 
-  // ---------- RSVP & Ucapan ----------
-  const LS = "undangan_ucapan_v1";
-  const contoh = [
-    {nama:"Contoh Tamu 1", hadir:"Hadir", jumlah:"2", ucapan:"Selamat menempuh hidup baru! Semoga menjadi keluarga sakinah, mawaddah, warahmah. (contoh ucapan)", waktu:"2026-11-10T09:00:00+07:00"},
-    {nama:"Contoh Tamu 2", hadir:"Masih Ragu", jumlah:"1", ucapan:"Barakallahu lakuma wa baraka 'alaikuma. (contoh ucapan)", waktu:"2026-11-11T13:00:00+07:00"}
-  ];
+  // ---------- RSVP & Ucapan (tersimpan di Supabase) ----------
+  const LS = "undangan_ucapan_" + slug;
   const local = () => { try { return JSON.parse(localStorage.getItem(LS)) || []; } catch { return []; } };
-  let remote = null;
+  let list = [];
   function render(){
-    const list = (remote || [...local(), ...contoh]).slice().sort((a,b)=>new Date(b.waktu)-new Date(a.waktu));
-    const cnt = h => list.filter(x=>x.hadir===h).length;
-    $("#stats").innerHTML = `<span>💬 ${list.length} Ucapan</span><span>✅ ${cnt("Hadir")} Hadir</span><span>❌ ${cnt("Tidak Hadir")} Tidak</span><span>🤔 ${cnt("Masih Ragu")} Ragu</span>`;
-    $("#wishes").innerHTML = list.map(w => {
+    const L = list.slice().sort((a,b)=>new Date(b.waktu)-new Date(a.waktu));
+    const cnt = h => L.filter(x=>x.hadir===h).length;
+    $("#stats").innerHTML = `<span>💬 ${L.length} Ucapan</span><span>✅ ${cnt("Hadir")} Hadir</span><span>❌ ${cnt("Tidak Hadir")} Tidak</span><span>🤔 ${cnt("Masih Ragu")} Ragu</span>`;
+    $("#wishes").innerHTML = L.length ? L.map(w => {
       const cls = w.hadir==="Hadir"?"":w.hadir==="Tidak Hadir"?"no":"maybe";
       const t = w.waktu ? new Date(w.waktu).toLocaleString("id-ID",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "";
-      return `<div class="wish"><div class="avatar">${esc((w.nama||"?").trim()[0]||"?").toUpperCase()}</div><div>
+      return `<div class="wish"><div class="avatar">${esc(((w.nama||"?").trim()[0]||"?").toUpperCase())}</div><div>
         <b>${esc(w.nama)}</b><span class="badge ${cls}">${esc(w.hadir)}</span><p>${esc(w.ucapan)}</p><time>${esc(t)}</time></div></div>`;
-    }).join("");
+    }).join("") : `<p class="sub">Jadilah yang pertama mengirim ucapan 💐</p>`;
   }
-  async function loadRemote(){
-    if(!C.rsvpEndpoint) return;
-    try { const r = await fetch(C.rsvpEndpoint + (C.rsvpEndpoint.includes("?")?"&":"?") + "t=" + Date.now()); const j = await r.json();
-      if(Array.isArray(j)) { remote = j; render(); } } catch(e){ console.warn("RSVP endpoint gagal dimuat", e); }
+  async function loadWishes(){
+    if (!inv) { list = local(); return render(); }
+    try {
+      const r = await api(`rsvps?invitation_id=eq.${inv.id}&select=nama,hadir,jumlah,ucapan,created_at&order=created_at.desc&limit=1000`);
+      if (r.ok) list = (await r.json()).map(x => ({ ...x, waktu: x.created_at }));
+    } catch (e) { console.warn(e); }
+    render();
   }
   $("#rsvpForm").addEventListener("submit", async e => {
     e.preventDefault();
     const fd = Object.fromEntries(new FormData(e.target).entries());
-    const item = { nama: fd.nama.trim(), hadir: fd.hadir, jumlah: fd.jumlah, ucapan: fd.ucapan.trim(), waktu: new Date().toISOString() };
-    if(!item.nama || !item.ucapan) return;
-    const btn = e.target.querySelector("button"); btn.disabled = true;
-    if (C.rsvpEndpoint) {
-      try { await fetch(C.rsvpEndpoint, {method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(item)});
-        if (remote) remote.unshift(item); else { const l=local(); l.push(item); localStorage.setItem(LS, JSON.stringify(l)); }
-        setTimeout(loadRemote, 1500);
-      } catch { const l=local(); l.push(item); localStorage.setItem(LS, JSON.stringify(l)); }
-    } else { const l=local(); l.push(item); localStorage.setItem(LS, JSON.stringify(l)); }
-    render(); e.target.ucapan.value = ""; btn.disabled = false;
+    const item = { nama: fd.nama.trim().slice(0,80), hadir: fd.hadir, jumlah: parseInt(fd.jumlah)||1, ucapan: fd.ucapan.trim().slice(0,600) };
+    if(!item.nama || !item.ucapan || !item.hadir) return;
+    const btn = e.target.querySelector("button"); btn.disabled = true; btn.textContent = "Mengirim…";
+    let ok = true;
+    if (inv) {
+      try { const r = await api("rsvps", { method:"POST", headers:{ Prefer:"return=minimal" }, body: JSON.stringify({ ...item, invitation_id: inv.id }) }); ok = r.ok; }
+      catch { ok = false; }
+    } else { const l = local(); l.push({ ...item, waktu: new Date().toISOString() }); localStorage.setItem(LS, JSON.stringify(l)); }
+    btn.disabled = false; btn.textContent = "Kirim Ucapan 💌";
+    if (!ok) { $("#formMsg").textContent = "Maaf, gagal mengirim. Coba lagi ya."; return; }
+    list.unshift({ ...item, waktu: new Date().toISOString() }); render();
+    e.target.ucapan.value = "";
     $("#formMsg").textContent = "Terima kasih, ucapan & konfirmasi Anda sudah terkirim 💐";
     toast("💌 Ucapan terkirim");
     if (C.nomorWhatsApp) {
       const txt = `Halo, saya ${item.nama} konfirmasi: ${item.hadir} (${item.jumlah} orang).\nUcapan: ${item.ucapan}`;
-      window.open(`https://wa.me/${C.nomorWhatsApp}?text=${encodeURIComponent(txt)}`, "_blank");
+      window.open(`https://wa.me/${String(C.nomorWhatsApp).replace(/\D/g,"")}?text=${encodeURIComponent(txt)}`, "_blank");
     }
   });
-  render(); loadRemote();
+  loadWishes();
 
   // ---------- Musik ----------
-  const bgm = $("#bgm"); bgm.src = C.musik; bgm.volume = 0.7;
+  const bgm = $("#bgm"); if (C.musik) bgm.src = C.musik; else $("#musicBtn").style.display = "none"; bgm.volume = 0.7;
   const mb = $("#musicBtn");
   function setMusic(){ mb.classList.toggle("playing", !bgm.paused); mb.classList.toggle("paused", bgm.paused); }
   mb.onclick = () => { bgm._byVideo=false; bgm.paused ? bgm.play().catch(()=>{}) : bgm.pause(); setTimeout(setMusic,50); };
@@ -190,6 +229,8 @@
     petals();
   };
 
+  if (params.get("preview") === "1") { $("#cover").classList.add("opened"); document.body.classList.remove("locked"); document.body.classList.add("opened"); }
+
   // ---------- Animasi scroll ----------
   const io = new IntersectionObserver(es => es.forEach(en => { if(en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); } }), {threshold:.12});
   document.querySelectorAll(".reveal").forEach(el => io.observe(el));
@@ -200,7 +241,8 @@
   // ---------- Kelopak bunga ----------
   function petals(){
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const box = $("#petals"), colors = ["#F9D6C5","#F4B9B2","#E3EFE0","#FCE7D6"];
+    const cs = getComputedStyle(document.documentElement), cv = k => cs.getPropertyValue(k).trim();
+    const box = $("#petals"), colors = [cv("--peach2")||"#F9D6C5", cv("--rose")||"#F4B9B2", cv("--sage-l")||"#E3EFE0", cv("--peach")||"#FCE7D6"];
     let n = 0; const iv = setInterval(() => {
       const p = document.createElement("div"); p.className = "petal";
       p.style.left = Math.random()*100 + "vw"; p.style.background = colors[n%4];

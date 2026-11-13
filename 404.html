@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Undangan</title>
+<script>
+// Link cantik: /<slug>/?to=Nama  ->  /?u=<slug>&to=Nama
+(function(){
+  var base = /\.github\.io$/.test(location.hostname) ? "/undangan/" : "/";
+  var rest = location.pathname.slice(base.length).split("/").filter(Boolean);
+  var slug = (rest[0] || "").toLowerCase();
+  if (/^[a-z0-9][a-z0-9-]{1,40}$/.test(slug) && ["dashboard","admin","assets","shared"].indexOf(slug) < 0) {
+    var q = location.search ? "&" + location.search.slice(1) : "";
+    location.replace(base + "?u=" + encodeURIComponent(slug) + q + location.hash);
+  } else {
+    document.addEventListener("DOMContentLoaded", function(){ document.body.style.display = "block"; });
+  }
+})();
+</script>
+<style>body{display:none;font-family:sans-serif;text-align:center;padding:3rem;color:#4A3B37;background:#FFF9F4}</style>
+</head><body><h2>Halaman tidak ditemukan</h2><p><a href="/">Kembali ke beranda</a></p></body></html>
