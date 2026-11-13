@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Undangan Pernikahan</title>
+<meta name="description" content="Undangan pernikahan digital — kami mengundang Anda untuk hadir di hari bahagia kami.">
+<meta property="og:title" content="Undangan Pernikahan">
+<meta property="og:description" content="Kami mengundang Anda untuk hadir di hari bahagia kami.">
+<meta property="og:image" content="https://bersamakita2020-max.github.io/undangan/assets/img/cover.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>">
+<meta property="og:url" content="https://bersamakita2020-max.github.io/undangan/">
+<meta name="theme-color" content="#FDEDE4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+</head>
+<body class="locked">
+
+<!-- ============ COVER ============ -->
+<section id="cover" class="cover">
+  <div class="cover-bg" id="coverBg"></div>
+  <div class="cover-overlay"></div>
+  <div class="cover-content">
+    <p class="eyebrow">The Wedding of</p>
+    <h1 class="script couple-names" data-bind="pasangan"></h1>
+    <p class="cover-date" data-bind="tanggalPendek"></p>
+    <div class="guest-box">
+      <p>Kepada Yth. Bapak/Ibu/Saudara/i</p>
+      <h2 id="guestName">Tamu Undangan</h2>
+      <small>Mohon maaf bila ada kesalahan penulisan nama/gelar</small>
+    </div>
+    <button id="openBtn" class="btn btn-primary btn-lg"><span>✉</span> Buka Undangan</button>
+  </div>
+</section>
+
+<main id="main">
+  <!-- ============ HERO ============ -->
+  <section id="hero" class="hero">
+    <div class="hero-bg" id="heroBg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content reveal">
+      <p class="eyebrow light">We Are Getting Married</p>
+      <h2 class="script big" data-bind="pasangan"></h2>
+      <p class="hero-date" data-bind="tanggalPanjang"></p>
+      <p class="hashtag" data-bind="hashtag"></p>
+    </div>
+    <div class="scroll-hint">Gulir ke bawah ↓</div>
+  </section>
+
+  <!-- ============ AYAT ============ -->
+  <section class="section quote">
+    <div class="card glass reveal">
+      <div class="ornament">❦</div>
+      <p class="ayat" data-bind="ayatTeks"></p>
+      <p class="ayat-src" data-bind="ayatSumber"></p>
+    </div>
+  </section>
+
+  <!-- ============ MEMPELAI ============ -->
+  <section id="mempelai" class="section couple">
+    <p class="eyebrow reveal">Assalamu'alaikum Warahmatullahi Wabarakatuh</p>
+    <p class="lead reveal">Dengan memohon rahmat dan ridho Allah SWT, kami bermaksud menyelenggarakan pernikahan putra-putri kami:</p>
+    <div class="person reveal" id="pria"></div>
+    <div class="amp script reveal">&amp;</div>
+    <div class="person reveal" id="wanita"></div>
+  </section>
+
+  <!-- ============ COUNTDOWN ============ -->
+  <section class="section countdown-sec">
+    <h3 class="title script reveal">Menuju Hari Bahagia</h3>
+    <div class="countdown reveal" id="countdown">
+      <div><b id="cd-d">0</b><span>Hari</span></div>
+      <div><b id="cd-h">0</b><span>Jam</span></div>
+      <div><b id="cd-m">0</b><span>Menit</span></div>
+      <div><b id="cd-s">0</b><span>Detik</span></div>
+    </div>
+  </section>
+
+  <!-- ============ ACARA ============ -->
+  <section id="acara" class="section events">
+    <h3 class="title script reveal">Rangkaian Acara</h3>
+    <div id="eventList" class="event-list"></div>
+    <div class="map-wrap reveal">
+      <iframe id="mapFrame" title="Peta lokasi" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+  </section>
+
+  <!-- ============ LOVE STORY ============ -->
+  <section id="story" class="section story">
+    <h3 class="title script reveal">Kisah Cinta Kami</h3>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <!-- ============ GALERI ============ -->
+  <section id="galeri" class="section gallery-sec">
+    <h3 class="title script reveal">Galeri</h3>
+    <p class="sub reveal">Momen-momen bahagia kami</p>
+    <div class="gallery" id="gallery"></div>
+    <div class="videos" id="videos"></div>
+  </section>
+
+  <!-- ============ AMPLOP DIGITAL ============ -->
+  <section id="hadiah" class="section gift">
+    <h3 class="title script reveal">Amplop Digital</h3>
+    <p class="sub reveal">Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Namun jika memberi adalah ungkapan tanda kasih, Anda dapat memberi kado secara cashless.</p>
+    <div class="gift-tabs reveal">
+      <button class="tab active" data-tab="tf">💳 Transfer</button>
+      <button class="tab" data-tab="qr">📱 QRIS</button>
+      <button class="tab" data-tab="kado">🎁 Kirim Kado</button>
+    </div>
+    <div class="tab-panel active" id="tab-tf"><div id="bankList" class="bank-list"></div></div>
+    <div class="tab-panel" id="tab-qr"><div class="card center"><img id="qrisImg" alt="QRIS" class="qris"><p class="small">Scan QRIS di atas dengan aplikasi bank / e-wallet apa saja</p></div></div>
+    <div class="tab-panel" id="tab-kado"><div class="card center" id="kadoBox"></div></div>
+  </section>
+
+  <!-- ============ RSVP & UCAPAN ============ -->
+  <section id="rsvp" class="section rsvp">
+    <h3 class="title script reveal">RSVP &amp; Ucapan</h3>
+    <p class="sub reveal">Mohon konfirmasi kehadiran dan kirimkan doa terbaik untuk kami</p>
+    <form id="rsvpForm" class="card form reveal">
+      <label>Nama<input name="nama" id="fNama" required maxlength="60" placeholder="Nama Anda"></label>
+      <label>Konfirmasi Kehadiran
+        <select name="hadir" required>
+          <option value="">— Pilih —</option>
+          <option>Hadir</option>
+          <option>Tidak Hadir</option>
+          <option>Masih Ragu</option>
+        </select>
+      </label>
+      <label>Jumlah Tamu
+        <select name="jumlah"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+      </label>
+      <label>Ucapan &amp; Doa<textarea name="ucapan" required maxlength="500" rows="4" placeholder="Tulis ucapan dan doa untuk kedua mempelai"></textarea></label>
+      <button class="btn btn-primary" type="submit">Kirim Ucapan 💌</button>
+      <p class="form-msg" id="formMsg"></p>
+    </form>
+    <div class="stats reveal" id="stats"></div>
+    <div class="wishes" id="wishes"></div>
+  </section>
+
+  <!-- ============ PENUTUP ============ -->
+  <section class="closing">
+    <div class="closing-bg" id="closingBg"></div>
+    <div class="hero-overlay"></div>
+    <div class="closing-content reveal">
+      <p data-bind="penutup"></p>
+      <p>Atas kehadiran dan doa restunya, kami ucapkan terima kasih.</p>
+      <p class="eyebrow light">Wassalamu'alaikum Warahmatullahi Wabarakatuh</p>
+      <p class="small light">Kami yang berbahagia,</p>
+      <h2 class="script big" data-bind="pasangan"></h2>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Dibuat dengan ♥ untuk <span data-bind="pasangan"></span></p>
+    <p class="tiny" data-bind="kreditMusik"></p>
+  </footer>
+</main>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav" id="bottomNav">
+  <a href="#hero" title="Beranda">🏠<span>Home</span></a>
+  <a href="#mempelai" title="Mempelai">💑<span>Mempelai</span></a>
+  <a href="#acara" title="Acara">📅<span>Acara</span></a>
+  <a href="#galeri" title="Galeri">📷<span>Galeri</span></a>
+  <a href="#hadiah" title="Hadiah">🎁<span>Hadiah</span></a>
+  <a href="#rsvp" title="Ucapan">💬<span>Ucapan</span></a>
+</nav>
+
+<!-- Music button -->
+<button class="music-btn" id="musicBtn" aria-label="Musik">♪</button>
+<audio id="bgm" loop preload="auto"></audio>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lbClose" aria-label="Tutup">✕</button>
+  <button class="lb-nav lb-prev" id="lbPrev" aria-label="Sebelumnya">‹</button>
+  <img id="lbImg" alt="">
+  <button class="lb-nav lb-next" id="lbNext" aria-label="Berikutnya">›</button>
+  <div class="lb-count" id="lbCount"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="petals" id="petals" aria-hidden="true"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
