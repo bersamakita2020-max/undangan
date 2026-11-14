@@ -7,7 +7,7 @@
   var base = /\.github\.io$/.test(location.hostname) ? "/undangan/" : "/";
   var rest = location.pathname.slice(base.length).split("/").filter(Boolean);
   var slug = (rest[0] || "").toLowerCase();
-  if (/^[a-z0-9][a-z0-9-]{1,40}$/.test(slug) && ["dashboard","admin","assets","shared"].indexOf(slug) < 0) {
+  if (/^[a-z0-9][a-z0-9-]{1,40}$/.test(slug) && ["dashboard","admin","assets","shared","katalog"].indexOf(slug) < 0) {
     var q = location.search ? "&" + location.search.slice(1) : "";
     location.replace(base + "?u=" + encodeURIComponent(slug) + q + location.hash);
   } else {

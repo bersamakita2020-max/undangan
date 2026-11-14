@@ -12,11 +12,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../config.js"></script>
 <script src="../shared/default-data.js"></script>
+<script src="../shared/brand.js"></script>
+<script src="../shared/templates.js"></script>
 <script src="../shared/common.js"></script>
 </head>
 <body>
 <div id="loginView" class="login-wrap">
   <div class="card login">
+    <img data-brand-logo alt="Anara Studio" class="login-logo">
     <div class="script">Admin Undangan</div>
     <p class="muted small">Khusus pemilik platform</p>
     <form id="loginForm">
@@ -28,7 +31,7 @@
   </div>
 </div>
 <div id="appView" hidden>
-  <header class="top"><div class="top-in"><div class="brand">Admin</div><div class="sp"></div><div class="who" id="who"></div>
+  <header class="top"><div class="top-in"><div class="brand"><img data-brand-logo alt="Anara Studio">Admin</div><div class="sp"></div><div class="who" id="who"></div>
     <button class="btn btn-ghost btn-sm" data-logout>Keluar</button></div></header>
   <main class="wrap">
     <div id="notAdmin" class="card" hidden><h3>Bukan akun admin</h3><p class="muted">Halaman ini khusus admin. <a href="../dashboard/">Buka dashboard klien</a>.</p></div>
@@ -39,10 +42,17 @@
           <label class="f">Email login klien<input name="email" type="email" required placeholder="klien@email.com"></label>
           <label class="f">Slug link undangan<input name="slug" required pattern="[a-z0-9][a-z0-9-]{1,40}" placeholder="budi-ani"><span class="tiny muted" id="slugHint"></span></label>
           <label class="f">Password awal<div class="row" style="flex-wrap:nowrap"><input name="password" required minlength="8"><button type="button" class="btn btn-outline btn-sm" id="genPw">Acak</button></div></label>
+          <label class="f">Paket (menentukan template yang boleh dipilih)<select name="package" id="cPkg"></select></label>
+          <label class="f">Template awal<select name="template" id="cTpl"></select></label>
         </div><button class="btn btn-primary" type="submit">＋ Buat Akun &amp; Undangan</button></form>
         <div id="createResult"></div></div>
       <div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Daftar Akun</h3><button class="btn btn-ghost btn-sm" id="reload">🔄 Muat ulang</button></div>
-        <div class="tbl-wrap" style="margin-top:.7rem"><table><thead><tr><th>Nama / Email</th><th>Peran</th><th>Undangan</th><th>Tamu</th><th>RSVP</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="users"></tbody></table></div></div>
+        <div class="tbl-wrap" style="margin-top:.7rem"><table><thead><tr><th>Nama / Email</th><th>Peran</th><th>Undangan</th><th>Paket</th><th>Template</th><th>Tamu</th><th>RSVP</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="users"></tbody></table></div></div>
+      <div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Template &amp; Harga</h3><a class="btn btn-ghost btn-sm" href="../katalog/" target="_blank">🛍️ Buka katalog</a></div>
+        <p class="small muted" style="margin:.4rem 0 .7rem">Atur harga, paket (tier), urutan, dan tampil/sembunyi tiap template. Klien hanya bisa memilih template yang tier-nya ≤ paket mereka.</p>
+        <div class="tbl-wrap"><table class="adm-tpl"><thead><tr><th></th><th>Template</th><th>Kategori</th><th>Paket</th><th>Harga (Rp)</th><th>Urut</th><th>Baru</th><th>Aktif</th><th>Dipakai</th><th></th></tr></thead><tbody id="tplRows"></tbody></table></div></div>
+      <div class="card"><h3>Paket Harga</h3><p class="small muted" style="margin:.2rem 0 .7rem">Harga &amp; daftar fitur paket tampil di katalog. Fitur: satu baris per poin.</p>
+        <div class="grid2" id="pkgRows"></div></div>
     </div>
   </main>
 </div>

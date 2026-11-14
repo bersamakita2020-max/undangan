@@ -1,6 +1,6 @@
 (function(){
   const { sb, PF, $, $$, esc, toast, copy, inviteUrl, prettyUrl, setupLogin, role } = APP;
-  const S = { session:null, inv:null, data:{}, theme:{}, wa:"", media:[], guests:[], rsvps:[], dirty:false };
+  const S = { session:null, inv:null, data:{}, theme:{}, wa:"", media:[], guests:[], rsvps:[], templates:[], packages:[], pick:null, dirty:false };
   const ZONA = { WIB:"+07:00", WITA:"+08:00", WIT:"+09:00" };
   const DEFAULT_WA = "Assalamu'alaikum Wr. Wb.\n\nKepada Yth.\nBapak/Ibu/Saudara/i *{nama}*\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:\n\n*{mempelai}*\n📅 {tanggal}\n\nInfo lengkap acara, lokasi, dan konfirmasi kehadiran ada di link undangan berikut:\n{link}\n\nMerupakan suatu kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.\n\nTerima kasih.\nWassalamu'alaikum Wr. Wb.";
   const busy = (on, msg) => { $("#busy").hidden = !on; if (msg) $("#busyMsg").textContent = msg; };
@@ -28,9 +28,9 @@
     S.data = structuredClone(S.inv.data || {});
     S.theme = Object.assign({ preset: "peach-rose" }, S.inv.theme || {});
     S.wa = S.inv.wa_template || DEFAULT_WA;
-    TEMA.apply(S.theme);
+    TEMA.apply(TEMPLATES.themeFor(S.inv.template, S.theme));
     $("#viewLink").href = inviteUrl(S.inv.slug);
-    await Promise.all([loadMedia(), loadGuests(), loadRsvps()]);
+    await Promise.all([loadMedia(), loadGuests(), loadRsvps(), loadCatalog()]);
     renderAll();
   });
 
@@ -41,11 +41,15 @@
     window.scrollTo({ top: 0 });
   });
 
+  async function loadCatalog(){
+    const [t, p] = await Promise.all([sb.from("templates").select("*").order("sort"), sb.from("packages").select("*").order("rank")]);
+    S.templates = (t.data || []).filter(x => TEMPLATES.MAP[x.slug]); S.packages = p.data || [];
+  }
   async function loadMedia(){ const { data } = await sb.from("media").select("*").eq("invitation_id", S.inv.id).order("sort").order("created_at"); S.media = data || []; }
   async function loadGuests(){ const { data } = await sb.from("guests").select("*").eq("invitation_id", S.inv.id).order("no", { nullsFirst: false }).order("created_at"); S.guests = data || []; }
   async function loadRsvps(){ const { data } = await sb.from("rsvps").select("*").eq("invitation_id", S.inv.id).order("created_at", { ascending: false }); S.rsvps = data || []; }
 
-  function renderAll(){ renderRingkasan(); renderMempelai(); renderAcara(); renderCerita(); renderMedia(); renderAmplop(); renderTema(); renderTamu(); renderRsvp(); }
+  function renderAll(){ renderRingkasan(); renderMempelai(); renderAcara(); renderCerita(); renderMedia(); renderAmplop(); renderTemplate(); renderTema(); renderTamu(); renderRsvp(); }
 
   // ---------------- Generic fields ----------------
   const fld = (path, label, type = "text", ph = "", cls = "") => {
@@ -149,7 +153,7 @@
         <li>Isi data di menu <b>Mempelai</b>, <b>Acara</b>, dan <b>Love Story</b>, lalu klik <b>Simpan Perubahan</b>.</li>
         <li>Upload foto sampul, galeri, video, dan musik di menu <b>Foto, Video &amp; Musik</b>.</li>
         <li>Isi rekening, QRIS, dan alamat kado di menu <b>Amplop</b>.</li>
-        <li>Pilih warna di menu <b>Tema</b>.</li>
+        <li>Pilih desain di menu <b>Template</b> dan warna di menu <b>Warna</b>.</li>
         <li>Di menu <b>Tamu</b>: download template Excel, isi nama tamu, upload, lalu klik <b>Kirim WA</b> per tamu.</li>
         <li>Pantau konfirmasi dan ucapan di menu <b>RSVP &amp; Ucapan</b>.</li></ol></div>`;
   }
@@ -285,9 +289,10 @@
 
   // ---------------- Tema ----------------
   function renderTema(){
-    const t = TEMA.resolve(S.theme);
+    const t = TEMA.resolve(TEMPLATES.themeFor(S.inv.template, S.theme));
     $("#p-tema").innerHTML = `<div class="preview-wrap"><div>
-      <div class="card"><h3>Pilih Tema Warna</h3><div class="themes">${Object.entries(TEMA.PRESETS).map(([k, p]) => `<button class="theme ${S.theme.preset === k && !S.theme.primary ? "active" : ""}" data-preset="${k}">
+      <div class="card"><h3>Pilih Tema Warna</h3><p class="small muted" style="margin-bottom:.6rem">Template saat ini: <b>${esc(TEMPLATES.get(S.inv.template).name)}</b> — ganti desain di menu <b>Template</b>.</p><div class="themes">${(() => { const tp = TEMPLATES.get(S.inv.template).palette; return `<button class="theme ${S.theme.preset === "template" && !S.theme.primary ? "active" : ""}" data-preset="template">
+        <div class="sw"><span style="background:${TEMA.mix(tp.primary, "#fff", .85)}"></span><span style="background:${tp.primary}"></span><span style="background:${tp.accent}"></span><span style="background:${tp.gold}"></span></div>✨ Bawaan template</button>`; })()}${Object.entries(TEMA.PRESETS).map(([k, p]) => `<button class="theme ${S.theme.preset === k && !S.theme.primary ? "active" : ""}" data-preset="${k}">
         <div class="sw"><span style="background:${TEMA.mix(p.primary, "#fff", .85)}"></span><span style="background:${p.primary}"></span><span style="background:${p.accent}"></span><span style="background:${p.gold}"></span></div>${p.nama}</button>`).join("")}</div></div>
       <div class="card"><h3>Warna Kustom</h3><p class="small muted">Ubah warna sendiri (opsional). Warna lembut & latar dibuat otomatis.</p>
         <div class="row" style="margin-top:.6rem">
@@ -297,13 +302,54 @@
           <button class="btn btn-ghost btn-sm" id="cReset">Reset ke preset</button></div></div>
       <div class="help">Pratinjau di samping langsung berubah. Klik <b>Simpan Perubahan</b> agar tema dipakai di undangan.</div>
       </div><div class="phone"><iframe id="previewFrame" src="${esc(inviteUrl(S.inv.slug))}&preview=1" title="Pratinjau"></iframe></div></div>`;
-    const push = () => { TEMA.apply(S.theme); const f = $("#previewFrame"); if (f && f.contentWindow) f.contentWindow.postMessage({ type: "tema", theme: S.theme }, "*"); markDirty(); };
+    const push = () => { TEMA.apply(TEMPLATES.themeFor(S.inv.template, S.theme)); const f = $("#previewFrame"); if (f && f.contentWindow) f.contentWindow.postMessage({ type: "tema", theme: S.theme }, "*"); markDirty(); };
     $$("[data-preset]").forEach(b => b.onclick = () => { S.theme = { preset: b.dataset.preset }; push(); renderTema(); });
     ["Primary", "Accent", "Gold"].forEach(k => $("#c" + k).oninput = e => { S.theme[k.toLowerCase()] = e.target.value; push(); $$("[data-preset]").forEach(b => b.classList.remove("active")); });
     $("#cReset").onclick = () => { S.theme = { preset: S.theme.preset || "peach-rose" }; push(); renderTema(); };
     $("#previewFrame").onload = () => $("#previewFrame").contentWindow.postMessage({ type: "tema", theme: S.theme }, "*");
   }
-  function reloadPreview(){ const f = $("#previewFrame"); if (f) f.src = f.src; }
+  // ---------------- Template ----------------
+  const pkgOf = slug => S.packages.find(p => p.slug === slug) || { slug, name: slug, rank: 1, price: 0 };
+  const allowed = t => (pkgOf(t.tier).rank || 1) <= (pkgOf(S.inv.package).rank || 1);
+  function renderTemplate(){
+    const my = pkgOf(S.inv.package), cur = S.inv.template, pick = S.pick || cur;
+    const n = S.templates.filter(allowed).length;
+    const upMsg = t => BRAND.waLink(`Halo ${BRAND.name}, saya pemilik undangan "${S.inv.slug}" (paket ${my.name}).\nSaya ingin upgrade paket agar bisa memakai template *${t.name}* (paket ${pkgOf(t.tier).name} – ${BRAND.rupiah(pkgOf(t.tier).price)}).`);
+    $("#p-template").innerHTML = `<div class="preview-wrap"><div>
+      <div class="pkg-box"><div><span class="muted small">Paket Anda</span><br><b>${esc(my.name)}</b> · ${BRAND.rupiah(my.price)}<div class="small muted">Bisa memakai ${n} dari ${S.templates.length} template</div></div>
+        ${my.rank < Math.max(...S.packages.map(p => p.rank)) ? `<a class="btn btn-sm btn-outline" style="background:#fff" target="_blank" rel="noopener" href="${esc(BRAND.waLink(`Halo ${BRAND.name}, saya pemilik undangan "${S.inv.slug}" (paket ${my.name}). Saya ingin upgrade paket.`))}">⬆️ Upgrade paket</a>` : ""}</div>
+      <div class="card"><h3>Pilih Template Desain</h3><p class="small muted" style="margin-bottom:.8rem">Klik gambar untuk pratinjau di samping, lalu klik <b>Pakai</b>. Warna otomatis mengikuti template (bisa diubah di menu <b>Warna</b>). Template 🔒 butuh paket lebih tinggi.</p>
+      <div class="tpl-grid">${S.templates.map(t => { const ok = allowed(t), tp = pkgOf(t.tier);
+        return `<div class="tpl-card ${t.slug === cur ? "cur" : ""} ${t.slug === pick && t.slug !== cur ? "sel" : ""} ${ok ? "" : "locked"}">
+          <div class="th" data-tpview="${t.slug}" style="background-image:url('${esc(BRAND.abs(t.thumbnail || ""))}')"><span class="tier ${esc(t.tier)}">${esc(tp.name)}</span>
+            ${t.slug === cur ? '<span class="cur-tag">✓ Dipakai</span>' : ""}${ok ? "" : `<div class="lockov"><div><b>🔒</b>Paket ${esc(tp.name)}</div></div>`}</div>
+          <div class="bd"><div class="nm">${esc(t.name)}</div><div class="mt">${esc(t.category)} · ${BRAND.rupiah(t.price)}</div>
+            ${t.slug === cur ? `<button class="btn btn-xs btn-ghost" disabled>Sedang dipakai</button>` : ok ? `<button class="btn btn-xs btn-primary" data-tpuse="${t.slug}">Pakai</button>`
+              : `<a class="btn btn-xs btn-outline" target="_blank" rel="noopener" href="${esc(upMsg(t))}">Upgrade via WA</a>`}</div></div>`; }).join("")}</div></div>
+      </div><div class="phone"><iframe id="tplFrame" src="${esc(inviteUrl(S.inv.slug))}&preview=1" title="Pratinjau template"></iframe></div></div>`;
+    const f = $("#tplFrame");
+    f.onload = () => { if (S.pick && S.pick !== S.inv.template) f.contentWindow.postMessage({ type: "template", slug: S.pick, theme: { preset: "template" } }, location.origin); };
+  }
+  document.addEventListener("click", async e => {
+    const v = e.target.closest("[data-tpview]");
+    if (v) { S.pick = v.dataset.tpview; const f = $("#tplFrame");
+      if (f && f.contentWindow) f.contentWindow.postMessage({ type: "template", slug: S.pick, theme: S.pick === S.inv.template ? S.theme : { preset: "template" } }, location.origin);
+      $$(".tpl-card").forEach(c => c.classList.toggle("sel", c.querySelector("[data-tpview]")?.dataset.tpview === S.pick && S.pick !== S.inv.template)); }
+    const u = e.target.closest("[data-tpuse]");
+    if (u) {
+      const slug = u.dataset.tpuse, t = S.templates.find(x => x.slug === slug);
+      if (!confirm(`Pakai template "${t ? t.name : slug}" untuk undangan Anda?`)) return;
+      busy(true, "Mengganti template…");
+      const theme = { preset: "template" };
+      const { error } = await sb.from("invitations").update({ template: slug, theme }).eq("id", S.inv.id);
+      busy(false);
+      if (error) { toast(/terkunci/i.test(error.message) ? "🔒 " + error.message : "Gagal: " + error.message, "err"); return; }
+      S.inv.template = slug; S.inv.theme = theme; S.theme = { ...theme }; S.pick = null;
+      TEMA.apply(TEMPLATES.themeFor(slug, S.theme));
+      renderTemplate(); renderTema(); toast("✓ Template diganti — undangan Anda sudah memakai desain baru");
+    }
+  });
+  function reloadPreview(){ ["#previewFrame", "#tplFrame"].forEach(id => { const f = $(id); if (f) f.src = f.src; }); }
 
   // ---------------- Tamu ----------------
   const normPhone = p => { let d = String(p || "").replace(/\D/g, ""); if (d.startsWith("0")) d = "62" + d.slice(1); else if (d.startsWith("8")) d = "62" + d; return d; };

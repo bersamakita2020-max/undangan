@@ -2,12 +2,15 @@
   const PF = window.PLATFORM || {};
   const $ = s => document.querySelector(s);
   const params = new URLSearchParams(location.search);
+  // Mode demo katalog: ?demo=<template>  -> data contoh lokal, tanpa database
+  const demoTpl = (params.get("demo") || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+  const isDemo = !!demoTpl && !!window.TEMPLATES && !!TEMPLATES.MAP[demoTpl];
   const slug = (params.get("u") || params.get("undangan") || PF.defaultSlug || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
   const api = (path, opt = {}) => fetch(PF.supabaseUrl + "/rest/v1/" + path, { ...opt,
     headers: { apikey: PF.supabaseKey, "Content-Type": "application/json", ...(opt.headers || {}) } });
   let inv = null, media = [], online = false;
-  try {
-    const r = await api(`invitations?slug=eq.${encodeURIComponent(slug)}&select=id,slug,data,theme`);
+  if (!isDemo) try {
+    const r = await api(`invitations?slug=eq.${encodeURIComponent(slug)}&select=id,slug,data,theme,template`);
     if (r.ok) { online = true; inv = (await r.json())[0] || null; }
     if (inv) { const m = await api(`media?invitation_id=eq.${inv.id}&select=kind,url,title,sort&order=sort.asc,created_at.asc`); media = m.ok ? await m.json() : []; }
   } catch (e) { console.warn("Gagal memuat data undangan", e); }
@@ -16,7 +19,7 @@
     return;
   }
   const BASE = { pria:{}, wanita:{}, ayat:{}, acara:[], loveStory:[], galeri:[], video:[], rekening:[], alamatKado:{} };
-  const C = Object.assign({}, BASE, inv ? inv.data : window.UNDANGAN_DEFAULT);
+  const C = Object.assign({}, BASE, inv ? inv.data : (isDemo && window.TEMPLATES ? TEMPLATES.demoData(window.UNDANGAN_DEFAULT) : window.UNDANGAN_DEFAULT));
   ["pria","wanita","ayat","alamatKado"].forEach(k => C[k] = C[k] || {});
   ["acara","loveStory","galeri","video","rekening"].forEach(k => C[k] = Array.isArray(C[k]) ? C[k] : []);
   if (inv && media.length) {
@@ -25,8 +28,25 @@
     if (ph.length) C.galeri = ph;
     if (vd.length) C.video = vd;
   }
-  if (window.TEMA) TEMA.apply(inv ? inv.theme : null);
-  window.addEventListener("message", e => { if (e.data && e.data.type === "tema" && window.TEMA) TEMA.apply(e.data.theme); });
+  // ---------- Template desain ----------
+  let tplSlug = isDemo ? demoTpl : (inv && inv.template) || "classic-bloom";
+  let tplTheme = isDemo ? null : (inv ? inv.theme : null);
+  const applyTpl = () => { if (window.TEMPLATES) TEMPLATES.apply(tplSlug, { theme: tplTheme }); else if (window.TEMA) TEMA.apply(tplTheme); };
+  applyTpl();
+  // Pratinjau dari dashboard (iframe): ganti tema/template tanpa menyimpan
+  window.addEventListener("message", e => {
+    if (!e.data || e.origin !== location.origin) return;
+    if (e.data.type === "tema") { tplTheme = e.data.theme; applyTpl(); }
+    if (e.data.type === "template" && window.TEMPLATES && TEMPLATES.MAP[e.data.slug]) { tplSlug = e.data.slug; if (e.data.theme) tplTheme = e.data.theme; applyTpl(); }
+  });
+  // Label demo + tautan ke katalog
+  if ((isDemo || !params.get("u")) && window.top === window.self) {
+    const t = window.TEMPLATES ? TEMPLATES.get(tplSlug) : null;
+    const pill = document.createElement("a"); pill.className = "demo-pill"; pill.href = "katalog/";
+    pill.innerHTML = `<img data-brand-logo alt="">${isDemo && t ? "Demo: " + t.name : "Contoh undangan"} <b>Lihat Katalog →</b>`;
+    document.body.appendChild(pill); if (window.BRAND) BRAND.init();
+    if (params.get("preview") === "1") pill.remove();
+  }
   setTimeout(() => $("#loading").classList.add("hide"), 150);
   const firstAcara = C.acara[0] || {};
   C.tanggalUtama = C.tanggalUtama || firstAcara.mulai || new Date().toISOString();
@@ -226,7 +246,7 @@
     document.body.classList.remove("locked"); document.body.classList.add("opened");
     window.scrollTo(0,0);
     bgm.play().catch(()=>{}); setMusic();
-    petals();
+    if (window.TEMPLATES) TEMPLATES.fx(tplSlug); else petals();
   };
 
   if (params.get("preview") === "1") { $("#cover").classList.add("opened"); document.body.classList.remove("locked"); document.body.classList.add("opened"); }

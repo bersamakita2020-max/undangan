@@ -13,12 +13,15 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="../config.js"></script>
 <script src="../shared/theme.js"></script>
+<script src="../shared/brand.js"></script>
+<script src="../shared/templates.js"></script>
 <script src="../shared/default-data.js"></script>
 <script src="../shared/common.js"></script>
 </head>
 <body>
 <div id="loginView" class="login-wrap">
   <div class="card login">
+    <img data-brand-logo alt="Anara Studio" class="login-logo">
     <div class="script">Undangan Digital</div>
     <p class="muted small">Masuk untuk mengelola undangan Anda</p>
     <form id="loginForm">
@@ -34,7 +37,7 @@
 <div id="appView" hidden>
   <header class="top">
     <div class="top-in">
-      <div class="brand">Undangan</div>
+      <div class="brand"><img data-brand-logo alt="Anara Studio">Undangan</div>
       <div class="sp"></div>
       <div class="who" id="who"></div>
       <a class="btn btn-outline btn-sm" id="adminLink" href="../admin/" hidden>⚙️ Admin</a>
@@ -48,7 +51,8 @@
       <button data-tab="cerita">💞 Love Story</button>
       <button data-tab="media">📷 Foto, Video &amp; Musik</button>
       <button data-tab="amplop">🎁 Amplop</button>
-      <button data-tab="tema">🎨 Tema</button>
+      <button data-tab="template">🖼️ Template</button>
+      <button data-tab="tema">🎨 Warna</button>
       <button data-tab="tamu">👥 Tamu</button>
       <button data-tab="rsvp">💬 RSVP &amp; Ucapan</button>
     </nav>
@@ -60,6 +64,7 @@
     <section class="panel" id="p-cerita"></section>
     <section class="panel" id="p-media"></section>
     <section class="panel" id="p-amplop"></section>
+    <section class="panel" id="p-template"></section>
     <section class="panel" id="p-tema"></section>
     <section class="panel" id="p-tamu"></section>
     <section class="panel" id="p-rsvp"></section>

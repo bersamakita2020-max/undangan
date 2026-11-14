@@ -15,9 +15,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="templates.css">
 <script src="config.js"></script>
 <script src="shared/default-data.js"></script>
 <script src="shared/theme.js"></script>
+<script src="shared/brand.js"></script>
+<script src="shared/templates.js"></script>
 </head>
 <body class="locked">
 <div class="loading" id="loading"><div class="ring"></div><p class="script" style="font-size:1.8rem">Memuat undangan…</p></div>
@@ -27,7 +30,7 @@
   <div class="cover-bg" id="coverBg"></div>
   <div class="cover-overlay"></div>
   <div class="cover-content">
-    <p class="eyebrow">The Wedding of</p>
+    <p class="eyebrow" id="coverEyebrow">The Wedding of</p>
     <h1 class="script couple-names" data-bind="pasangan"></h1>
     <p class="cover-date" data-bind="tanggalPendek"></p>
     <div class="guest-box">
@@ -45,7 +48,7 @@
     <div class="hero-bg" id="heroBg"></div>
     <div class="hero-overlay"></div>
     <div class="hero-content reveal">
-      <p class="eyebrow light">We Are Getting Married</p>
+      <p class="eyebrow light" id="heroEyebrow">We Are Getting Married</p>
       <h2 class="script big" data-bind="pasangan"></h2>
       <p class="hero-date" data-bind="tanggalPanjang"></p>
       <p class="hashtag" data-bind="hashtag"></p>
@@ -160,6 +163,7 @@
   <footer class="footer">
     <p>Dibuat dengan ♥ untuk <span data-bind="pasangan"></span></p>
     <p class="tiny" data-bind="kreditMusik"></p>
+    <p class="credit">Undangan digital oleh <a href="katalog/" target="_blank" rel="noopener"><img data-brand-logo alt="Anara Studio">Anara Studio</a></p>
   </footer>
 </main>
 
