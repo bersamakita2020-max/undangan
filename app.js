@@ -31,12 +31,24 @@
   // ---------- Template desain ----------
   let tplSlug = isDemo ? demoTpl : (inv && inv.template) || "classic-bloom";
   let tplTheme = isDemo ? null : (inv ? inv.theme : null);
-  const applyTpl = () => { if (window.TEMPLATES) TEMPLATES.apply(tplSlug, { theme: tplTheme }); else if (window.TEMA) TEMA.apply(tplTheme); };
+  // Teks yang bisa diedit klien (shared/teks.js). Kosong = baris disembunyikan.
+  const renderTeks = () => {
+    if (!window.TEKS) return;
+    const tx = (window.TEMPLATES ? TEMPLATES.get(tplSlug).text : null) || {};
+    document.querySelectorAll("[data-teks]").forEach(el => {
+      const f = TEKS.byKey[el.dataset.teks]; if (!f) return;
+      let v = TEKS.value(C, f, tx);
+      el.textContent = f.key === "ayat.teks" && v.trim() ? `“${v}”` : v; el.hidden = !v.trim();
+    });
+    const q = document.querySelector(".section.quote"); if (q) q.hidden = !TEKS.value(C, TEKS.byKey["ayat.teks"]).trim();
+  };
+  const applyTpl = () => { if (window.TEMPLATES) TEMPLATES.apply(tplSlug, { theme: tplTheme }); else if (window.TEMA) TEMA.apply(tplTheme); renderTeks(); };
   applyTpl();
   // Pratinjau dari dashboard (iframe): ganti tema/template tanpa menyimpan
   window.addEventListener("message", e => {
     if (!e.data || e.origin !== location.origin) return;
     if (e.data.type === "tema") { tplTheme = e.data.theme; applyTpl(); }
+    if (e.data.type === "teks") { C.teks = e.data.teks || {}; C.ayat = e.data.ayat || {}; C.penutup = e.data.penutup; renderTeks(); }
     if (e.data.type === "template" && window.TEMPLATES && TEMPLATES.MAP[e.data.slug]) { tplSlug = e.data.slug; if (e.data.theme) tplTheme = e.data.theme; applyTpl(); }
   });
   // Label demo + tautan ke katalog

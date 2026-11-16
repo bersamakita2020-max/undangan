@@ -49,7 +49,7 @@
   async function loadGuests(){ const { data } = await sb.from("guests").select("*").eq("invitation_id", S.inv.id).order("no", { nullsFirst: false }).order("created_at"); S.guests = data || []; }
   async function loadRsvps(){ const { data } = await sb.from("rsvps").select("*").eq("invitation_id", S.inv.id).order("created_at", { ascending: false }); S.rsvps = data || []; }
 
-  function renderAll(){ renderRingkasan(); renderMempelai(); renderAcara(); renderCerita(); renderMedia(); renderAmplop(); renderTemplate(); renderTema(); renderTamu(); renderRsvp(); }
+  function renderAll(){ renderRingkasan(); renderMempelai(); renderTeks(); renderAcara(); renderCerita(); renderMedia(); renderAmplop(); renderTemplate(); renderTema(); renderTamu(); renderRsvp(); }
 
   // ---------------- Generic fields ----------------
   const fld = (path, label, type = "text", ph = "", cls = "") => {
@@ -69,7 +69,7 @@
   };
   document.addEventListener("input", e => {
     const el = e.target;
-    if (el.dataset.path) { setP(S.data, el.dataset.path, el.value); markDirty(); }
+    if (el.dataset.path) { setP(S.data, el.dataset.path, el.value); markDirty(); if (el.closest("#p-teks")) postTeks(); }
     if (el.dataset.list) { const arr = S.data[el.dataset.list]; arr[+el.dataset.idx][el.dataset.key] = el.value; markDirty(); if (el.dataset.list === "acara") syncAcara(); }
   });
   document.addEventListener("change", async e => {
@@ -166,11 +166,39 @@
       ${fld(k + ".anakKe", "Keterangan anak", "text", k === "pria" ? "Putra pertama dari" : "Putri kedua dari")}${fld(k + ".instagram", "Instagram (tanpa @)")}
       ${fld(k + ".ayah", "Nama ayah", "text", "Bapak …")}${fld(k + ".ibu", "Nama ibu", "text", "Ibu …")}</div></div>`;
     $("#p-mempelai").innerHTML = person("pria", "Mempelai Pria") + person("wanita", "Mempelai Wanita") + `
-      <div class="card"><h3>Teks Undangan</h3><div class="grid2">
-        ${fld("judul", "Judul halaman", "text", "The Wedding of …", "full")}
-        ${fld("ayat.teks", "Ayat / kutipan", "textarea", "", "full")}${fld("ayat.sumber", "Sumber ayat", "text", "QS. Ar-Rum : 21")}${fld("hashtag", "Hashtag", "text", "#KamiBahagia")}
-        ${fld("penutup", "Kalimat penutup", "textarea", "", "full")}</div></div>`;
+      <div class="card"><h3>Judul & Hashtag</h3><div class="grid2">
+        ${fld("judul", "Judul halaman (tab browser)", "text", "The Wedding of …", "full")}${fld("hashtag", "Hashtag", "text", "#KamiBahagia")}</div>
+        <p class="tiny muted" style="margin-top:.5rem">Salam, ayat, kalimat pembuka & penutup diatur di menu <b>📝 Teks &amp; Ucapan</b>.</p></div>`;
   }
+
+  // ---------------- Teks & Ucapan ----------------
+  const delP = (o, p) => { const ks = p.split("."); const par = getP(o, ks.slice(0, -1).join(".")) ?? (ks.length === 1 ? o : null); if (par && typeof par === "object") delete par[ks.at(-1)]; };
+  function postTeks(){ const f = $("#teksFrame"); if (f && f.contentWindow) f.contentWindow.postMessage({ type: "teks", teks: S.data.teks || {}, ayat: S.data.ayat || {}, penutup: S.data.penutup }, location.origin); }
+  function renderTeks(){
+    const tx = TEMPLATES.get(S.inv.template).text || {};
+    const input = f => { const v = TEKS.value(S.data, f, tx);
+      return `<label class="f ${f.multi ? "full" : ""}"><span class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:.4rem"><span>${esc(f.label)}</span>
+        <button type="button" class="btn btn-xs btn-ghost" data-treset="${f.key}" title="Kembalikan ke teks bawaan">↺ default</button></span>
+        ${f.multi ? `<textarea data-path="${f.path}" rows="3" placeholder="(dikosongkan = disembunyikan)">${esc(v)}</textarea>` : `<input data-path="${f.path}" value="${esc(v)}" placeholder="${f.required ? esc(f.def) : "(dikosongkan = disembunyikan)"}">`}</label>`; };
+    $("#p-teks").innerHTML = `<div class="preview-wrap"><div>
+      <div class="card"><h3>Pilih Gaya Salam</h3><p class="small muted" style="margin-bottom:.6rem">Mengisi otomatis salam pembuka, kalimat pengantar, ayat/kutipan, kalimat harapan, terima kasih & salam penutup. Setelah itu tetap bisa Anda ubah.</p>
+        <div class="row">${Object.entries(TEKS.PRESETS).map(([k, p]) => `<button type="button" class="btn btn-sm btn-outline" data-tpreset="${k}">${esc(p.nama)}</button>`).join("")}
+        <button type="button" class="btn btn-sm btn-ghost" id="teksResetAll">↺ Kembalikan semua ke default</button></div></div>
+      <div class="help">Kosongkan kolom untuk <b>menyembunyikan</b> barisnya di undangan. Pratinjau di samping langsung berubah; klik <b>Simpan Perubahan</b> agar tampil di undangan.</div>
+      ${TEKS.GROUPS.map(g => `<div class="card"><h3>${esc(g.title)}</h3><div class="grid2">${g.fields.map(input).join("")}</div></div>`).join("")}
+      </div><div class="phone"><iframe id="teksFrame" src="${esc(inviteUrl(S.inv.slug))}&preview=1" title="Pratinjau teks"></iframe></div></div>`;
+    $("#teksFrame").onload = postTeks;
+  }
+  document.addEventListener("click", e => {
+    const r = e.target.closest("[data-treset]"), p = e.target.closest("[data-tpreset]"), all = e.target.closest("#teksResetAll");
+    if (!r && !p && !all) return;
+    if (r) { const f = TEKS.byKey[r.dataset.treset]; if (f.path === "penutup" || f.path.startsWith("ayat.")) setP(S.data, f.path, f.def); else delP(S.data, f.path); }
+    if (p) { const pr = TEKS.PRESETS[p.dataset.tpreset]; if (!confirm(`Pakai gaya salam "${pr.nama}"? Salam, ayat, kalimat pengantar & penutup akan diganti.`)) return;
+      Object.entries(pr.v).forEach(([k, v]) => setP(S.data, TEKS.byKey[k].path, v)); }
+    if (all) { if (!confirm("Kembalikan SEMUA teks ke bawaan (gaya Islami)?")) return;
+      S.data.teks = {}; TEKS.FIELDS.filter(f => f.path === "penutup" || f.path.startsWith("ayat.")).forEach(f => setP(S.data, f.path, f.def)); }
+    markDirty(); const y = window.scrollY; renderTeks(); window.scrollTo(0, y); postTeks(); toast(p ? "✓ Gaya salam diterapkan — jangan lupa Simpan" : "✓ Dikembalikan ke default — jangan lupa Simpan");
+  });
 
   // ---------------- Acara ----------------
   function splitIso(iso){ const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(iso || ""); const z = /([+-]\d\d:\d\d)$/.exec(iso || ""); return { tgl: m ? m[1] : "", jam: m ? m[2] : "", off: z ? z[1] : "+07:00" }; }
@@ -346,10 +374,10 @@
       if (error) { toast(/terkunci/i.test(error.message) ? "🔒 " + error.message : "Gagal: " + error.message, "err"); return; }
       S.inv.template = slug; S.inv.theme = theme; S.theme = { ...theme }; S.pick = null;
       TEMA.apply(TEMPLATES.themeFor(slug, S.theme));
-      renderTemplate(); renderTema(); toast("✓ Template diganti — undangan Anda sudah memakai desain baru");
+      renderTemplate(); renderTema(); renderTeks(); toast("✓ Template diganti — undangan Anda sudah memakai desain baru");
     }
   });
-  function reloadPreview(){ ["#previewFrame", "#tplFrame"].forEach(id => { const f = $(id); if (f) f.src = f.src; }); }
+  function reloadPreview(){ ["#previewFrame", "#tplFrame", "#teksFrame"].forEach(id => { const f = $(id); if (f) f.src = f.src; }); }
 
   // ---------------- Tamu ----------------
   const normPhone = p => { let d = String(p || "").replace(/\D/g, ""); if (d.startsWith("0")) d = "62" + d.slice(1); else if (d.startsWith("8")) d = "62" + d; return d; };

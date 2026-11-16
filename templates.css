@@ -539,3 +539,6 @@ body.tpl-cinematic-film::after{content:"";position:fixed;inset:-50%;pointer-even
 .tpl-cinematic-film .music-btn{background:#E8B04B;color:#111;border-radius:4px;box-shadow:none}
 .tpl-cinematic-film .video-card p{background:#1A1B1E;color:#9A9890}
 .tpl-cinematic-film .loading{background:#111214;color:#E8B04B}
+/* teks yang dikosongkan klien disembunyikan */
+[data-teks][hidden]{display:none!important}
+.title[hidden]+.orn-div{display:none}
