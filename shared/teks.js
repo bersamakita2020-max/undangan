@@ -33,7 +33,7 @@
       F("salamPenutup", "Salam penutup", "Wassalamu'alaikum Warahmatullahi Wabarakatuh", { preset: true }),
       F("kamiBerbahagia", "Tulisan sebelum nama mempelai", "Kami yang berbahagia,") ]}
   ];
-  const FIELDS = GROUPS.flatMap(g => g.fields).map(f => ({ ...f, path: f.path || "teks." + f.key }));
+  const FIELDS = GROUPS.flatMap(g => g.fields); FIELDS.forEach(f => { f.path = f.path || "teks." + f.key; });
   const PRESETS = {
     islami: { nama: "Islami", v: {} },
     umum: { nama: "Umum / Nasional", v: {
